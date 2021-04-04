@@ -1,0 +1,190 @@
+openapi: 3.0.0
+info:
+  title: Stock API
+  description: Stock API
+  contact:
+    email: a_mitrenga@utb.cz
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+servers:
+- url: https://virtserver.swaggerhub.com/edems_swag/stock_api/1.0.0
+  description: SwaggerHub API Auto Mocking
+tags:
+- name: Stock_Ape
+  description: Secured Admin-only calls
+paths:
+  /history:
+    get:
+      tags:
+      - Stock_Ape
+      summary: Returns
+      description: |
+        By passing a stock ticker you will get returned data 100 days back
+      operationId: stock_history
+      parameters:
+      - name: ticker
+        in: query
+        description: pass stock ticker for history
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: results matching criteria
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryData'
+        "400":
+          description: bad input parameter
+      x-openapi-router-controller: swagger_server.controllers.stock_ape_controller
+  /quote:
+    get:
+      tags:
+      - Stock_Ape
+      summary: Returns
+      description: |
+        By passing a stock ticker you will get returned latest quote data
+        from ALPHAVANTAGE or Database
+      operationId: stock_quote
+      parameters:
+      - name: ticker
+        in: query
+        description: pass stock ticker for quote
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: results matching criteria
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuoteData'
+        "400":
+          description: bad input parameter
+      x-openapi-router-controller: swagger_server.controllers.stock_ape_controller
+  /prediction:
+    get:
+      tags:
+      - Stock_Ape
+      summary: Returns
+      description: |
+        By passing in the appropriate symbol you can get prediction
+        data for ticker
+      operationId: predict_stock
+      parameters:
+      - name: ticker
+        in: query
+        description: pass stock ticker for prediction
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: results matching criteria
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PredictData'
+        "400":
+          description: bad input parameter
+      x-openapi-router-controller: swagger_server.controllers.stock_ape_controller
+components:
+  schemas:
+    HistoryData:
+      required:
+      - predictions
+      - symbol
+      type: object
+      properties:
+        symbol:
+          type: string
+          format: utf-8
+          example: AMZN
+        predictions:
+          type: array
+          items:
+            $ref: '#/components/schemas/History'
+      example:
+        symbol: AMZN
+        predictions:
+        - value: 1791.42
+        - value: 1791.42
+    History:
+      required:
+      - value
+      type: object
+      properties:
+        value:
+          type: number
+          example: 1791.42
+      example:
+        value: 1791.42
+    QuoteData:
+      required:
+      - predictions
+      - symbol
+      type: object
+      properties:
+        symbol:
+          type: string
+          format: utf-8
+          example: AMZN
+        predictions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Quotes'
+      example:
+        symbol: AMZN
+        predictions:
+        - value: 1791.42
+        - value: 1791.42
+    Quotes:
+      required:
+      - value
+      type: object
+      properties:
+        value:
+          type: number
+          example: 1791.42
+      example:
+        value: 1791.42
+    PredictData:
+      required:
+      - predictions
+      - symbol
+      type: object
+      properties:
+        symbol:
+          type: string
+          format: utf-8
+          example: AMZN
+        predictions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Predictions'
+      example:
+        symbol: AMZN
+        predictions:
+        - value: 1791.42
+        - value: 1791.42
+    Predictions:
+      required:
+      - value
+      type: object
+      properties:
+        value:
+          type: number
+          example: 1791.42
+      example:
+        value: 1791.42
+
