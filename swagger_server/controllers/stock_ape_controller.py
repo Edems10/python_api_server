@@ -6,7 +6,6 @@ import requests
 import json
 import datetime
 
-
 from swagger_server.models.history_data import HistoryData  # noqa: E501
 from swagger_server.models.predict_data import PredictData  # noqa: E501
 from swagger_server.models.quote_data import QuoteData  # noqa: E501
@@ -14,6 +13,7 @@ from swagger_server import util
 
 api_key = 'ROPCJ3JV78ML1ZMD'
 time_valid = 1800
+
 
 def predict_stock(ticker):  # noqa: E501
     """Returns
@@ -41,7 +41,7 @@ def stock_history(ticker):  # noqa: E501
     conn = sqlite3.connect('stock.db')
     stock_h = get_stock_history(ticker, conn)
     conn.close()
-    return stock_h
+    return json.loads(stock_h)
 
 
 def stock_quote(ticker):  # noqa: E501
@@ -54,13 +54,14 @@ def stock_quote(ticker):  # noqa: E501
 
     :rtype: QuoteData
     """
+
     conn = sqlite3.connect('stock.db')
     stock = get_stock(ticker, conn)
     conn.close()
-    return stock
+    return json.loads(stock)
 
 
-def update_stock_history(symbol, json_history, last_called,conn):
+def update_stock_history(symbol, json_history, last_called, conn):
     database_command = f"UPDATE STOCK_HISTORY " \
                        f"SET JSON = '{json_history}'," \
                        f"LAST_CALLED ='{last_called}'" \
@@ -74,7 +75,7 @@ def update_stock_history(symbol, json_history, last_called,conn):
         return False
 
 
-def update_stock(symbol, valid, json_stock,conn):
+def update_stock(symbol, valid, json_stock, conn):
     database_command = f"UPDATE STOCK " \
                        f"SET VALID = {valid}," \
                        f"JSON ='{json_stock}'" \
@@ -88,7 +89,7 @@ def update_stock(symbol, valid, json_stock,conn):
         return False
 
 
-def get_old_stock_history(symbol,conn):
+def get_old_stock_history(symbol, conn):
     database_command = f"SELECT * FROM STOCK WHERE SYMBOL = '{symbol}'"
     cursor = conn.execute(database_command)
     r = [dict((cursor.description[i][0], value)
@@ -100,7 +101,7 @@ def get_old_stock_history(symbol,conn):
         return None
 
 
-def get_old_stock(symbol,conn):
+def get_old_stock(symbol, conn):
     database_command = f"SELECT * FROM STOCK WHERE SYMBOL = '{symbol}'"
     cursor = conn.execute(database_command)
     r = [dict((cursor.description[i][0], value)
@@ -112,19 +113,19 @@ def get_old_stock(symbol,conn):
         return None
 
 
-def call_api_tim_series_daily_adjusted(symbol, exists,conn):
+def call_api_tim_series_daily_adjusted(symbol, exists, conn):
     response = requests.get(f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&"
                             f"symbol={symbol}&outputsize=compact&apikey={api_key}")
     ts = 'Time Series (Daily)'
     data_json = response.text
     if ts in response.json() and len(response.json()[ts]) > 0:
         if exists:
-            update_stock_history(symbol, data_json, datetime.datetime.utcnow().date(),conn)
+            update_stock_history(symbol, data_json, datetime.datetime.utcnow().date(), conn)
         else:
-            insert_stock_history(symbol, data_json, datetime.datetime.utcnow().date(),conn)
+            insert_stock_history(symbol, data_json, datetime.datetime.utcnow().date(), conn)
         return data_json
     else:
-        return get_old_stock_history(symbol)
+        return get_old_stock_history(symbol, conn)
 
 
 def call_api_global_quote(symbol, exists, conn):
@@ -139,7 +140,7 @@ def call_api_global_quote(symbol, exists, conn):
             insert_stock(symbol, time.time() + time_valid, data_json, conn)
         return data_json
     else:
-        return get_old_stock(symbol)
+        return get_old_stock(symbol, conn)
 
 
 def get_stock(symbol, conn):
@@ -175,7 +176,7 @@ def get_stock(symbol, conn):
         return call_api_global_quote(symbol, False, conn)
 
 
-def insert_stock(symbol, valid, json_stock,conn):
+def insert_stock(symbol, valid, json_stock, conn):
     database_command = f"INSERT INTO STOCK (SYMBOL,VALID,JSON) " \
                        f"VALUES('{symbol}',{valid},'{json_stock}') "
     try:
@@ -186,7 +187,7 @@ def insert_stock(symbol, valid, json_stock,conn):
         return False
 
 
-def insert_stock_history(symbol, json_history, last_called,conn):
+def insert_stock_history(symbol, json_history, last_called, conn):
     database_command = f"INSERT INTO STOCK_HISTORY (SYMBOL,JSON,LAST_CALLED) " \
                        f"VALUES('{symbol}','{json_history}','{last_called}') "
     try:
@@ -218,7 +219,7 @@ def get_stock_history(symbol, conn):
         return None
 
     if r:
-        if r[0]['LAST_CALLED'] == datetime.datetime.utcnow().date():
+        if str(r[0]['LAST_CALLED']) == str(datetime.datetime.utcnow().date()):
             # vraceni pokud existuje a je validni
             return r[0]['JSON']
         else:

@@ -25,6 +25,17 @@ def create_stock_history_db():
     except sqlite3.OperationalError:
         return False
 
+def create_stock_prediction_db():
+    try:
+        conn.execute('''CREATE TABLE PREDICTION
+         ( SYMBOL        VARCHAR(10) PRIMARY KEY     NOT NULL,
+          STATE          INTEGER,
+          PRICE          INTEGER,
+          PRICE_DATE   DATETIME);''')
+        conn.commit()
+        return True
+    except sqlite3.OperationalError:
+        return False
 
 create_stock_history_db()
 create_stock_db()
