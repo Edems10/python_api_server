@@ -18,7 +18,7 @@ time_valid = 1800
 def predict_stock(ticker):  # noqa: E501
     """Returns
 
-    By passing in the appropriate symbol you can get prediction data for ticker  # noqa: E501
+    By passing in the appropriate symbol you can get prediction  for ticker  # noqa: E501
 
     :param ticker: pass stock ticker for prediction
     :type ticker: str
@@ -108,7 +108,7 @@ def get_old_stock(symbol, conn):
               for i, value in enumerate(row)) for row in cursor.fetchall()]
 
     if r:
-        r[0]
+        return r[0]
     else:
         return None
 
@@ -228,3 +228,7 @@ def get_stock_history(symbol, conn):
     else:
         # tady vola pokud neexistuje
         return call_api_tim_series_daily_adjusted(symbol, False, conn)
+
+
+
+
