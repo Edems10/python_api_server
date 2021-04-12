@@ -8,6 +8,7 @@ def create_stock_db():
          VALID          INTEGER     NOT NULL,
          JSON           TEXT        NOT NULL);''')
         conn.commit()
+        print("TABLE STOCK CREATED")
         return True
     except sqlite3.OperationalError:
         return False
@@ -19,6 +20,7 @@ def create_stock_history_db():
           JSON          TEXT       NOT NULL,
           LAST_CALLED   DATETIME NOT NULL);''')
         conn.commit()
+        print("TABLE STOCK_HISTORY CREATED")
         return True
     except sqlite3.OperationalError:
         return False
@@ -33,6 +35,7 @@ def create_stock_prediction_db():
           ACCURACY  REAL,
           PRICE_DATE   DATETIME);''')
         conn.commit()
+        print("TABLE PREDICTION CREATED")
         return True
     except sqlite3.OperationalError:
         return False

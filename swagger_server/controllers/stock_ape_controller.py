@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 import random
 import threading
+import ast
 # import matplotlib.pyplot as plt
 
 
@@ -94,7 +95,8 @@ def predict_stock(ticker):  # noqa: E501
     {LOSS}-{OPTIMIZER}-{CELL.__name__}-seq-{N_STEPS}-step-{LOOKUP_STEP}-layers-{N_LAYERS}-units-{UNITS}"
     prediction = get_prediction(ticker, ticker_data_filename, model_name, conn)
     conn.close()
-    return json.dumps(prediction)
+    prediction_quotes = prediction.replace("'", "\"")
+    return json.loads(prediction_quotes)
 
 
 def stock_history(ticker):  # noqa: E501
@@ -628,7 +630,6 @@ def check_date(prediction_date, time_back):
 
     date_time_obj = datetime.datetime.strptime(prediction_date, '%Y-%m-%d %H:%M:%S.%f')
     date_valid = datetime.datetime.now() + datetime.timedelta(time_back)
-    print(f"prediction date :{prediction_date}\ntime back :{time_back}\n datetimeobj:{date_time_obj}\ndate_valid{date_valid}")
     if date_time_obj > date_valid:
         return True
     else:
@@ -652,13 +653,10 @@ def get_prediction(ticker, ticker_data_filename, model_name, conn):
 
     if r:
         if r[0]['STATE'] == "PREDICTING":
-            print(1)
-            return "predicting"
+            return str(r[0])
 
         elif r[0]['STATE'] == "DONE":
-            print(2)
             if check_date(str(r[0]['PRICE_DATE']),5):
-                print(3)
                 return str(r[0])
             else:
                 print(4)
