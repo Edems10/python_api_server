@@ -35,7 +35,7 @@ random.seed(314)
 # Window size or the sequence length
 N_STEPS = 50
 # Lookup step, 1 is the next day
-LOOKUP_STEP = 15
+LOOKUP_STEP = 14
 
 # whether to scale feature columns & output price as well
 SCALE = True
@@ -132,14 +132,6 @@ def stock_quote(ticker):  # noqa: E501
     return json.loads(stock)
 
 
-
-
-
-
-
-
-
-
 def update_stock_history(symbol, json_history, last_called, conn):
     database_command = f"UPDATE STOCK_HISTORY " \
                        f"SET JSON = '{json_history}'," \
@@ -177,7 +169,7 @@ def get_old_stock_history(symbol, conn):
     if r:
         return r[0]
     else:
-        return None
+        return "None"
 
 
 def get_old_stock(symbol, conn):
@@ -187,9 +179,9 @@ def get_old_stock(symbol, conn):
               for i, value in enumerate(row)) for row in cursor.fetchall()]
 
     if r:
-        return r[0]
+        return r[0]['JSON']
     else:
-        return None
+        return "None"
 
 
 def call_api_tim_series_daily_adjusted(symbol, exists, conn):
@@ -241,7 +233,7 @@ def get_stock(symbol, conn):
         r = [dict((cursor.description[i][0], value)
                   for i, value in enumerate(row)) for row in cursor.fetchall()]
     except sqlite3.IntegrityError:
-        return None
+        return "None"
 
     if r:
         if (r[0]['VALID'] - time.time()) > 0:
@@ -295,22 +287,26 @@ def get_stock_history(symbol, conn):
         r = [dict((cursor.description[i][0], value)
                   for i, value in enumerate(row)) for row in cursor.fetchall()]
     except sqlite3.IntegrityError:
-        return None
+        print("NONE")
+        return "None"
 
     if r:
         if str(r[0]['LAST_CALLED']) == str(datetime.datetime.utcnow().date()):
             # vraceni pokud existuje a je validni
+            print("exists and is valid")
             return r[0]['JSON']
         else:
             # tady se vola pokud uz existuje ale neni validni
+            print("exists but not valid")
             return call_api_tim_series_daily_adjusted(symbol, True, conn)
     else:
         # tady vola pokud neexistuje
+        print("doesnt exist")
         return call_api_tim_series_daily_adjusted(symbol, False, conn)
 
 
 def train_stock(ticker,ticker_data_filename, model_name,conn):
-    # create these folders if they does not exist
+    # create these folders
     if not os.path.isdir("results"):
         os.mkdir("results")
 
@@ -338,6 +334,9 @@ def train_stock(ticker,ticker_data_filename, model_name,conn):
     tensorboard = TensorBoard(log_dir=os.path.join("logs", model_name))
     # train the model and save the weights whenever we see
     # a new optimal model using ModelCheckpoint
+    print(data["X_train"], data["y_train"])
+    print(data["X_train"].shape, data["y_train"].shape)
+
     history = model.fit(data["X_train"], data["y_train"],
                         batch_size=BATCH_SIZE,
                         epochs=EPOCHS,
@@ -497,6 +496,7 @@ def create_model(sequence_length, n_features, units=256, cell=LSTM, n_layers=2, 
         model.add(Dropout(dropout))
     model.add(Dense(1, activation="linear"))
     model.compile(loss=loss, metrics=["mean_absolute_error"], optimizer=optimizer)
+    print(model.summary())
     return model
 
 def get_final_df(model, data):
@@ -515,9 +515,13 @@ def get_final_df(model, data):
     y_test = data["y_test"]
     # perform prediction and get prices
     y_pred = model.predict(X_test)
+    print("Y_PRED")
+    print(y_pred.shape)
     if SCALE:
         y_test = np.squeeze(data["column_scaler"]["adjclose"].inverse_transform(np.expand_dims(y_test, axis=0)))
         y_pred = np.squeeze(data["column_scaler"]["adjclose"].inverse_transform(y_pred))
+
+    print(y_pred)
     test_df = data["test_df"]
     # add predicted future prices to the dataframe
     test_df[f"adjclose_{LOOKUP_STEP}"] = y_pred
@@ -653,16 +657,14 @@ def get_prediction(ticker, ticker_data_filename, model_name, conn):
 
     if r:
         if r[0]['STATE'] == "PREDICTING":
-            return str(r[0])
+            return "predicting"
 
         elif r[0]['STATE'] == "DONE":
             if check_date(str(r[0]['PRICE_DATE']),5):
                 return str(r[0])
             else:
-                print(4)
                 new_prediction(ticker,ticker_data_filename,model_name,conn)
-                return "predicting"
+                get_prediction(ticker, ticker_data_filename, model_name, conn)
     else:
-        print(5)
         new_prediction(ticker,ticker_data_filename,model_name,conn)
-        return "predicting"
+        get_prediction(ticker, ticker_data_filename, model_name, conn)
